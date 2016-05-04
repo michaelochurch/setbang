@@ -1,6 +1,7 @@
 (ns setbang.core
   (:require [clojure.set :as clj-set]
-            [clojure.string :as clj-string]))
+            [clojure.string :as clj-string])
+  (:gen-class))
 
 ;; Only exists for testing. Generates a non-normalized integer-equivalent set.
 (defn int-to-set [n]
@@ -273,8 +274,8 @@
   (let [x       (last stack)
         stack-1 (into [] (butlast stack))
         s       (if (number? x) (into #{} (range x)) x)
-        f       (fn [x] (last (run-code (conj stack-1 x) code)))]
-    (conj stack-1 (shrink-if-possible (gen-union (map f x))))))
+        f       (fn [e] (last (run-code (conj stack-1 e) code)))]
+    (conj stack-1 (shrink-if-possible (gen-union (map f s))))))
 
 (defn run-token [stack token]
   (if (string? token)
@@ -284,14 +285,21 @@
       (= (.charAt token 0) \[)
         (loop-with-code stack (.substring token 1 (dec (count token))))
       (= (.charAt token 0) \{)
-        (set-comprehension stack (.substring token 1 (dec (count token))))
-      (= (.charAt token 0) \:)
-        stack)
+        (set-comprehension stack (.substring token 1 (dec (count token)))))
     (case token
       \space stack
       \newline stack
       \return stack
       \0 (conj stack 0)
+      \1 (conj stack 1)
+      \2 (conj stack 2)
+      \3 (conj stack 3)
+      \4 (conj stack 4)
+      \5 (conj stack 5)
+      \6 (conj stack 6)
+      \7 (conj stack 7)
+      \8 (conj stack 8)
+      \9 (conj stack 9)
       \\ ((stack-fn choice 1) stack)
       \/ ((stack-fn insert 2) stack)
       \+ ((stack-fn pair 2) stack)
@@ -315,7 +323,8 @@
       \% ((stack-fn ordered-pair 2) stack)
       \* ((stack-fn ordered-pair-destructure 1) stack)
       \! ((stack-fn write-1 1) stack)
-      \@ (read-1 stack))))
+      \@ (read-1 stack)
+      stack)))
 
 (def single-char-token (set "~`!@#$%^&*0-_+=|\\;\"'<>,.?/ \n"))
 
@@ -333,24 +342,15 @@
                     close (recur (dec cnt) (inc i))
                     (recur cnt (inc i)))))))
 
-(defn parse-comment [code-string idx]
-  (let [idx-1 (.indexOf code-string "\n" idx)
-        new-idx (if (= idx-1 -1)
-                  (count code-string)
-                  (inc idx-1))]
-    [":" new-idx]))
-
 (defn parse-token [code-string & [idx]]
   (let [idx (or idx 0)]
     (if (>= idx (count code-string))
       nil
       (let [c (.charAt code-string idx)]
-        (cond (single-char-token c) [c (+ idx 1)]
-              (= c \[) (parse-chunk code-string idx)
+        (cond (= c \[) (parse-chunk code-string idx)
               (= c \() (parse-chunk code-string idx)
               (= c \{) (parse-chunk code-string idx)
-              (= c \:) (parse-comment code-string idx)
-              :else (throw (Exception. "parsing error")))))))
+              :else [c (+ idx 1)])))))
 
 (defn run-code [stack code]
   (loop [stack-state stack idx 0]
@@ -360,11 +360,14 @@
 
 (defn set-to-string [x numeric?]
   (if numeric?
-    (if (do (number? x))
+    (if (number? x)
       x
       (format "{%s}" (clj-string/join ", " (map #(set-to-string % true) x))))
     (let [s (if (number? x) (into #{} (range x)) x)]
       (apply str (concat '("{") (map #(set-to-string % false) s) '("}"))))))
+
+(defn stack-to-string [x numeric?]
+  (apply str "Stack: " (interpose " " (map #(set-to-string % numeric?) x))))
 
 (defn generate-test-case [n & [temp]]
   (let [temp (or temp (inc n))]
@@ -375,8 +378,43 @@
          (hash-set (generate-test-case k (rand-int k))
                    (generate-test-case (- n k) (rand-int (- n k)))))))))
 
-(defn parse-segment [string]
-)
+(def alphanum (set "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"))
 
-;; (defn macroexpand-setbang [code macros]
-;;   (let (find-macros code)
+(defn expand-macros [code macros]
+  (loop [c code]
+    (let [c1 (reduce (fn [c0 [k v]] (clj-string/replace c0 k v)) c macros)]
+      (if (= c1 c) c1 (recur c1)))))
+
+(defn handle-directive [line stack macros config]
+  (cond (clj-string/starts-with? line ":comment")
+          [stack macros config]
+        (clj-string/starts-with? line ":macro")
+          (let [[_ macro-name code] (clj-string/split line #"\s" 3)]
+            [stack (assoc macros (str ":" macro-name ":") code) config])
+        (clj-string/starts-with? line ":numeric")
+          (let [[_ on-off] (clj-string/split line #"\s" 3)]
+            (cond (= on-off "off") [stack macros (assoc config :numeric false)]
+                  (= on-off "on")  [stack macros (assoc config :numeric true)]
+                  :else (println "Warning: numeric directive only takes on or off.")))
+        (clj-string/starts-with? line ":quit")
+          (throw (Exception. "user quit"))
+        :else nil))
+
+(defn parse-line [line stack macros config]
+  (if-let [result (and (= (.charAt line 0) \:)
+                       (handle-directive line stack macros config))]
+    result
+    (let [code (expand-macros line macros)]
+      [(run-code stack code) macros config])))
+
+(defn setbang-repl []
+  (loop [stack [] macros {} config {:numeric true}]
+    (println (stack-to-string stack (:numeric config)))
+    (print "S∈tBang> ")
+    (flush)
+    (let [line (read-line)
+          [stack-1 macros-1 config-1] (parse-line line stack macros config)]
+      (recur stack-1 macros-1 config-1))))
+
+(defn -main []
+  (setbang-repl))

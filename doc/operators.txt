@@ -39,3 +39,18 @@ standard macros:
 1:0'
 2:1'
 swap:0''>
+
+File format:
+
+:directive1 blah
+
+:directive2 blah
+
+macro1:!@#$!@#$
+
+macro2:!@#%)!(@#
+
+!@#%(!@#)!@#!@$#)@#$@#$_!@#)@#!$_
+!@#!@#!@#!%!@$!#%!@#%
+
+blank lines separate macros and separate macros from executables.
