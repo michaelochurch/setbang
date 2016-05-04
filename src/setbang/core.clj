@@ -96,7 +96,7 @@
 (defn has-definite-size? [x]
   (or (number? x) (set? x)))
 
-;; Non-terminating on an infinite set. 
+;; Non-terminating on an infinite set.
 (defn get-size-up-to [x n]
   (cond (number? x) x
         (set?    x) (count x)
@@ -122,7 +122,7 @@
 
 ;; [x1 x2 x3 ...] [y1 y2 y3 ... ] [z1 z2 z3 ...] [w1 ...] ->
 ;; x1 x2 y1 x3 y2 z1 x4 y3 z2 w1 ...
-;; "diagonal" approach to make sure everything gets picked. 
+;; "diagonal" approach to make sure everything gets picked.
 (defn stagger [xs & [n]]
   (if (empty? xs) ()
       (let [n (or n 1)
@@ -212,7 +212,7 @@
      :else (let [[v w] (take 2 s)]
              [(first (gen-intersect-2 v w))
               (first (exclusive-or-2 v w))]))))
-;;(defn 
+;;(defn
 
 (defn vec-drop [k v]
   (subvec v 0 (- (count v) k)))
@@ -268,7 +268,7 @@
       st
       (recur (run-code st code)))))
 
-;; Do the union. This is the last part. 
+;; Do the union. This is the last part.
 (defn set-comprehension [stack code]
   (let [x       (last stack)
         stack-1 (into [] (butlast stack))
@@ -284,8 +284,13 @@
       (= (.charAt token 0) \[)
         (loop-with-code stack (.substring token 1 (dec (count token))))
       (= (.charAt token 0) \{)
-        (set-comprehension stack (.substring token 1 (dec (count token))))) 
+        (set-comprehension stack (.substring token 1 (dec (count token))))
+      (= (.charAt token 0) \:)
+        stack)
     (case token
+      \space stack
+      \newline stack
+      \return stack
       \0 (conj stack 0)
       \\ ((stack-fn choice 1) stack)
       \/ ((stack-fn insert 2) stack)
@@ -312,7 +317,7 @@
       \! ((stack-fn write-1 1) stack)
       \@ (read-1 stack))))
 
-(def single-char-token (set "~`!@#$%^&*0-_+=|\\:;\"'<>,.?/"))
+(def single-char-token (set "~`!@#$%^&*0-_+=|\\;\"'<>,.?/ \n"))
 
 (defn parse-chunk [code-string idx]
   (let [end (count code-string)
@@ -328,6 +333,13 @@
                     close (recur (dec cnt) (inc i))
                     (recur cnt (inc i)))))))
 
+(defn parse-comment [code-string idx]
+  (let [idx-1 (.indexOf code-string "\n" idx)
+        new-idx (if (= idx-1 -1)
+                  (count code-string)
+                  (inc idx-1))]
+    [":" new-idx]))
+
 (defn parse-token [code-string & [idx]]
   (let [idx (or idx 0)]
     (if (>= idx (count code-string))
@@ -337,6 +349,7 @@
               (= c \[) (parse-chunk code-string idx)
               (= c \() (parse-chunk code-string idx)
               (= c \{) (parse-chunk code-string idx)
+              (= c \:) (parse-comment code-string idx)
               :else (throw (Exception. "parsing error")))))))
 
 (defn run-code [stack code]
@@ -358,6 +371,12 @@
     (if (< (rand) (/ 1.0 temp))
       n
       (let [k (rand-int n)]
-        (hash-set (generate-test-case k (rand-int k))
-                  (generate-test-case (- n k) (rand-int (- n k))))))))
+        (normalize
+         (hash-set (generate-test-case k (rand-int k))
+                   (generate-test-case (- n k) (rand-int (- n k)))))))))
 
+(defn parse-segment [string]
+)
+
+;; (defn macroexpand-setbang [code macros]
+;;   (let (find-macros code)
