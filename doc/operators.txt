@@ -42,15 +42,8 @@ swap:0''>
 
 File format:
 
-:directive1 blah
+:macro swap 0''>
 
-:directive2 blah
+:test 0''' 3
 
-macro1:!@#$!@#$
-
-macro2:!@#%)!(@#
-
-!@#%(!@#)!@#!@$#)@#$@#$_!@#)@#!$_
-!@#!@#!@#!%!@$!#%!@#%
-
-blank lines separate macros and separate macros from executables.
+:test :swap::swap: e
