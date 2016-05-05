@@ -359,7 +359,9 @@
   (if numeric?
     (if (number? x)
       x
-      (format "{%s}" (clj-string/join ", " (map #(set-to-string % true) x))))
+      (if (has-definite-size? x)
+        (format "{%s}" (clj-string/join ", " (map #(set-to-string % true) x)))
+        (format "{%s, ...}" (clj-string/join "," (map #(set-to-string % true) (take 16 x))))))
     (let [s (if (number? x) (into #{} (range x)) x)]
       (apply str (concat '("{") (map #(set-to-string % false) s) '("}"))))))
 
@@ -441,7 +443,7 @@
           (setbang-file filename stack macros config))
         
         (clj-string/starts-with? line ":quit")
-          (throw (Exception. "user quit"))
+          :quit
         :else nil))
 
 (defn parse-line [line stack macros config]
@@ -460,8 +462,11 @@
     (print "S∈tBang> ")
     (flush)
     (let [line (read-line)
-          [stack-1 macros-1 config-1] (parse-line line stack macros config)]
-      (recur stack-1 macros-1 config-1))))
+          result (parse-line line stack macros config)]
+      (if (= result :quit)
+        (println "G∅∅dby∈!")
+        (let [[stack-1 macros-1 config-1] (parse-line line stack macros config)]
+          (recur stack-1 macros-1 config-1))))))
 
 (defn setbang-file [filename & [stack macros config]]
   (let [stack  (or stack [])
@@ -474,5 +479,7 @@
         (let [[s1 m1 c1] (parse-line (first remt) s m c)]
           (recur s1 m1 c1 (next remt)))))))
 
-(defn -main []
-  (setbang-repl))
+(defn -main [& _]
+  (if-let [filename (first *command-line-args*)]
+    (setbang-file filename)
+    (setbang-repl)))
