@@ -78,8 +78,10 @@
    (set?    x) (empty? x)
    :else       (empty? x)))
 
+(declare card)
 (defn choose-many [x n]
-  (let [s (if (number? x) (into #{} (range x)) x)]
+  (let [n (card n)
+        s (if (number? x) (into #{} (range x)) x)]
     (loop [remt s out #{} i 0]
       (if (or (>= i n) (is-empty-set remt))
         [(normalize remt) (normalize out)]
@@ -210,14 +212,19 @@
 (defn ordered-pair [x y]
   (normalize (hash-set (hash-set x) (hash-set x y))))
 
+(defn elt [x]
+  (cond (= x 0) 0
+        (= x 1) 0
+        :else (first x)))
+
 (defn ordered-pair-destructure [x]
-  (let [s (if (number? x) (into #{} (range x)) x)]
+  (let [s (as-set x)]
     (cond
      (empty? s) [0 0]
-     (= (count s) 1) [(first s) (first s)]
-     :else (let [[v w] (take 2 s)]
-             [(first (gen-intersect-2 v w))
-              (first (exclusive-or-2 v w))]))))
+     (= (count s) 1) [(elt (first s)) (elt (first s))]
+     :else (let [[v w] (map as-set (take 2 s))]
+             [(elt (gen-intersect-2 v w))
+              (elt (exclusive-or-2 v w))]))))
 
 (defn left-pad [size stack]
   (into [] (concat (repeat (- size (count stack)) 0) stack)))
@@ -257,8 +264,25 @@
 
 (declare run-code)
 
+;; This is important because we want to split conditional blocks only on
+;; top-level ,.  We don't want to split "(0(,),)" as: ["0(," "),)"]. That gives
+;; us two illegal code blocks.
+(defn split-if-legal [code]
+  (loop [i 0 cnt 0]
+    (if (>= i (count code))
+      [code ""] ; no split detected
+      (let [ch (.charAt code i)]
+        (case ch
+          \( (recur (inc i) (inc cnt))
+          \) (recur (inc i) (dec cnt))
+          \, (if (= cnt 0)
+               [(.substring code 0 i) (.substring code (inc i))]
+               (recur (inc i) cnt))
+          (recur (inc i) cnt))))))
+
 (defn conditionally-run-code [stack code]
-  (let [[then-code else-code] (clj-string/split code #",")
+  ;; this is wrong!!!
+  (let [[then-code else-code] (split-if-legal code)
         else-code (or else-code "")
         bool (is-empty-set (last stack))]
     (if bool
