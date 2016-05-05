@@ -16,6 +16,7 @@
             (if (= s (into #{} (range (count x))))
               (count x)
               s))
+        (empty? x) 0
         :else (map normalize x)))
 
 (defn is-mumber? [x]
@@ -136,10 +137,12 @@
                           (inc n)))))))
 
 (defn staggered-union [xs]
-  (lazy-seq
-   (let [ys (stagger xs)
-         y1 (first ys)]
-     (cons y1 (remove #(equality-check % y1) ys)))))
+  (if (empty? xs) ()
+      (lazy-seq
+       (let [ys (stagger xs)]
+         (if-let [y1 (first ys)]
+           (cons y1 (remove #(equality-check % y1) ys))
+           ())))))
 
 (defn gen-union [x-set]
   (cond
