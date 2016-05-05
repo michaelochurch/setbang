@@ -252,6 +252,7 @@
 
 (defn write-1 [ch]
   (.write *out* (card ch))
+  (flush)
   [])
 
 (declare run-code)
