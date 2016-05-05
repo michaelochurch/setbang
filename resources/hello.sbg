@@ -1,0 +1,11 @@
+:exec resources/stdlib.sbg
+
+:macro plus  [:swap:':swap::pred:]_
+:macro minus [:swap: :pred: :swap: :pred:]_
+
+:macro times 0 :swap: [:pred: 3> :swap: ~ 4> :plus: :swap:]_;
+
+:macro 32 5^#
+:macro 64 6^#
+
+:64:~8:plus:!:32::plus:~5:plus:!~9''':plus:~~!!3:plus:~!:32:~9''':plus:!!~8:plus:!~!~3:plus:!~3:minus:!9'':minus:!:32:'!9'!___

@@ -1,5 +1,6 @@
 (ns setbang.core
-  (:require [clojure.set :as clj-set]
+  (:require [clojure.java.io :as io]
+            [clojure.set :as clj-set]
             [clojure.string :as clj-string])
   (:gen-class))
 
@@ -315,7 +316,7 @@
       \- ((stack-fn (fn [x y] (difference-2 x y)) 2) stack)
       \. ((stack-fn (fn [x y] (exclusive-or-2 x y)) 2) stack)
       \" ((stack-fn (fn [x] (normalize #{x})) 1) stack)
-      \; ((stack-fn (fn [x y] x) 1) stack)
+      \; ((stack-fn (fn [x y] y) 2) stack)
       \% ((stack-fn ordered-pair 2) stack)
       \* ((stack-fn ordered-pair-destructure 1) stack)
       \! ((stack-fn write-1 1) stack)
@@ -381,7 +382,7 @@
     (let [c1 (reduce (fn [c0 [k v]] (clj-string/replace c0 k v)) c macros)]
       (if (= c1 c) c1 (recur c1)))))
 
-(defn test [code1 code2 macros n-trials stack-size]
+(defn test-code [code1 code2 macros n-trials stack-size]
   (loop [i 0]
     (if (>= i n-trials)
       (do
@@ -407,6 +408,7 @@
             (printf "Program #2: %s\nResult #2 %s\n\n" code2-m
                     (stack-to-string result2 true))))))))
 
+(declare setbang-file)
 (defn handle-directive [line stack macros config]
   (cond (clj-string/starts-with? line ":comment")
           [stack macros config]
@@ -421,22 +423,36 @@
                   (= on-off "on")  [stack macros (assoc config :numeric true)]
                   :else (println "Warning: numeric directive only takes on or off.")))
 
+        (clj-string/starts-with? line ":verbose")
+          (let [[_ on-off] (clj-string/split line #"\s" 3)]
+            (cond (= on-off "off") [stack macros (assoc config :verbose false)]
+                  (= on-off "on")  [stack macros (assoc config :verbose true)]
+                  :else (println "Warning: numeric directive only takes on or off.")))
+
+        
         (clj-string/starts-with? line ":test")
           (let [[_ code1 code2] (clj-string/split line #"\s")
                 code2 (or code2 "")]
-            (test code1 code2 macros 15 4)
+            (test-code code1 code2 macros 15 4)
             [stack macros config])
-            
+
+        (clj-string/starts-with? line ":exec")
+        (let [[_ filename] (clj-string/split line #"\s")]
+          (setbang-file filename stack macros config))
+        
         (clj-string/starts-with? line ":quit")
           (throw (Exception. "user quit"))
         :else nil))
 
 (defn parse-line [line stack macros config]
-  (if-let [result (and (= (.charAt line 0) \:)
-                       (handle-directive line stack macros config))]
-    result
-    (let [code (expand-macros line macros)]
-      [(run-code stack code) macros config])))            
+  (if (empty? line)
+    [stack macros config]
+    (if-let [result (and (= (.charAt line 0) \:)
+                         (handle-directive line stack macros config))]
+      result
+      (let [code (expand-macros line macros)]
+        (when (:verbose config) (println (apply str (remove #{\space} code))))
+        [(run-code stack code) macros config]))))
 
 (defn setbang-repl []
   (loop [stack [] macros {} config {:numeric true}]
@@ -446,6 +462,17 @@
     (let [line (read-line)
           [stack-1 macros-1 config-1] (parse-line line stack macros config)]
       (recur stack-1 macros-1 config-1))))
+
+(defn setbang-file [filename & [stack macros config]]
+  (let [stack  (or stack [])
+        macros (or macros {})
+        config (or config {})
+        rdr (io/reader filename)]
+    (loop [s stack m macros c config remt (line-seq rdr)]
+      (if (empty? remt)
+        [s m c]
+        (let [[s1 m1 c1] (parse-line (first remt) s m c)]
+          (recur s1 m1 c1 (next remt)))))))
 
 (defn -main []
   (setbang-repl))
