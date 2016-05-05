@@ -212,17 +212,14 @@
 (defn ordered-pair [x y]
   (normalize (hash-set (hash-set x) (hash-set x y))))
 
-(defn elt [x]
-  (cond (= x 0) 0
-        (= x 1) 0
-        :else (first x)))
-
 (defn ordered-pair-destructure [x]
-  (let [s (as-set x)]
+  (let [s (as-set x)
+        elt (fn [x] (second (choice x)))]
     (cond
      (empty? s) [0 0]
      (= (count s) 1) [(elt (first s)) (elt (first s))]
-     :else (let [[v w] (map as-set (take 2 s))]
+     :else (let [[s1 v] (choice s)
+                 [_  w] (choice s1)]
              [(elt (gen-intersect-2 v w))
               (elt (exclusive-or-2 v w))]))))
 
