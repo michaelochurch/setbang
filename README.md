@@ -1,14 +1,15 @@
 # setbang
 
-A Clojure library designed to ... well, that part is up to you.
+Implementation of SetBang, an esoteric programming language that
+
+* is based on the same foundations as mathematics: set theory.
+* allows the production of utterly unreadable code. 
 
 ## Usage
 
-FIXME
+See: [https://michaelochurch.wordpress.com/2016/05/05/setbang-1-toward-a-more-unreadable-esolang/](this post for an explanation). 
 
 ## License
 
-Copyright © 2016 FIXME
-
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+Copyright © 2016 Michael O. Church
+Distributed under the MIT License.
