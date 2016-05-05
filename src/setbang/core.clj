@@ -128,10 +128,10 @@
 (defn stagger [xs & [n]]
   (if (empty? xs) ()
       (let [n (or n 1)
-            choices (map choice (take n xs))]
+            choices (map choice (take n (remove is-empty-set xs)))]
         (lazy-seq
          (concat (map second choices)
-                 (stagger (concat (remove is-empty-set (map first choices))
+                 (stagger (concat (map first choices)
                                   (drop n xs))
                           (inc n)))))))
 
@@ -190,7 +190,6 @@
 (def large-set-cutoff 40)
 
 (defn shrink-if-possible [x]
-  (println "entering shrink-if-possible")
   (cond (number? x) x
         (set?    x) x
         :else (let [z (take (inc large-set-cutoff) x)]
