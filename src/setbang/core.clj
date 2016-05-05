@@ -69,7 +69,7 @@
    :else (if (empty? x)
            [0 0]
            (let [elt (first x)]
-             [(rest x) elt]))))
+             [(remove #(equality-check % elt) (rest x)) elt]))))
 
 (defn is-empty-set [x]
   (cond
@@ -129,10 +129,11 @@
   (if (empty? xs) ()
       (let [n (or n 1)
             choices (map choice (take n xs))]
-        (concat (map second choices)
-                (stagger (concat (remove is-empty-set (map first choices))
-                                 (drop n xs))
-                         (inc n))))))
+        (lazy-seq
+         (concat (map second choices)
+                 (stagger (concat (remove is-empty-set (map first choices))
+                                  (drop n xs))
+                          (inc n)))))))
 
 (defn staggered-union [xs]
   (lazy-seq
@@ -186,9 +187,10 @@
         coll' (take limit coll)]
     (map #(normalize (select-by-bits % coll')) (range 0 (bit-shift-left 1 (count coll'))))))
 
-(def large-set-cutoff 100000)
+(def large-set-cutoff 40)
 
 (defn shrink-if-possible [x]
+  (println "entering shrink-if-possible")
   (cond (number? x) x
         (set?    x) x
         :else (let [z (take (inc large-set-cutoff) x)]
@@ -361,7 +363,8 @@
       x
       (if (has-definite-size? x)
         (format "{%s}" (clj-string/join ", " (map #(set-to-string % true) x)))
-        (format "{%s, ...}" (clj-string/join "," (map #(set-to-string % true) (take 16 x))))))
+        (format "{%s, ...}" (clj-string/join "," (map #(set-to-string % true)
+                                                      (take 16 (distinct x)))))))
     (let [s (if (number? x) (into #{} (range x)) x)]
       (apply str (concat '("{") (map #(set-to-string % false) s) '("}"))))))
 
