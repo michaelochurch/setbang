@@ -7,7 +7,7 @@ Implementation of SetBang, an esoteric programming language that
 
 ## Usage
 
-See: [https://michaelochurch.wordpress.com/2016/05/05/setbang-1-toward-a-more-unreadable-esolang/](this post for an explanation). 
+See: [this post](https://michaelochurch.wordpress.com/2016/05/05/setbang-1-toward-a-more-unreadable-esolang/) for an explanation.
 
 ## License
 
