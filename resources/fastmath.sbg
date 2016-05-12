@@ -1,0 +1,33 @@
+:macro pred \_#
+
+:macro swap 2>
+
+:macro dup2 ~3<~4<2>4<
+
+:macro impPlus  [:swap:':swap::pred:]_
+
+:macro frombinary 02>[\^#3<:impPlus:2>]_
+
+:macro divmod2 003<[~#1?(_\_\_2>'2>,__2>_12>0)]_2>
+
+:macro tobinary 003<[:divmod2:(4<~5<2>/4>'4>_,4<'4>_)]_;
+
+:macro addbinary [:dup2:.3>&{'"}]_
+
+:macro shiftleft [\_2>{'"}2>]_
+
+:macro shiftright [\_2>{(\_#")}2>]_
+
+:macro mulbinary 03>[\3<~3<:shiftleft:4<:addbinary:3>2>]__
+
+:macro inter \2>[\3<&2>]_
+
+:macro compare :dup2:?3>2>?
+
+:macro subbinary :dup2:-3>2>-(~{}3<~4>{~3>2>~4>?(_",__0)}:inter:;(~"4<2>-3>2>-1:addbinary::addbinary:,___0),_)
+
+:macro lebinary :dup2:=(;;,_2>:subbinary:(_1))
+
+:macro divbinary (03>~{}3<~{}3<-#'[\_#3<~3<~4>:shiftleft:~5<~6>:lebinary:(_3<~4>6<2>/5>4<2>:subbinary:3<,__3>)]_;,2>)
+
+:macro primebinary ~22>?(__0,_2:tobinary:[~~:mulbinary:3<~4>:lebinary:(_:dup2::divbinary:(__1:addbinary:,____00),___10)]_)
