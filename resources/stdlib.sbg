@@ -1,3 +1,41 @@
 :macro pred \_#
 
 :macro swap 2>
+
+:macro not 0=
+
+:macro impPlus  [:swap:':swap::pred:]_
+
+:macro impMinus [:swap::pred::swap::pred:]_
+
+:macro minus -#
+
+:macro plus 02>{2>~3>%"}3>_12>{2>~3>%"}2>_|#
+
+:macro prod {2>{2>%"}};
+
+:macro times :prod:#
+
+:macro quot 2>~'3<2>~{3<:times:"}&\_#
+
+:macro divides ~3<2>{2>:times:"};2>?
+
+:macro prime ~2-{2>:divides:}:not:;
+
+:macro BIG 3^^\_#
+
+:macro u *2>~:BIG:?(__:BIG:,_')2>%
+
+:macro d *2>\_#2>%
+
+:macro l %
+
+:macro r *
+
+:macro p *2>~!2>*
+
+:macro g *2>_@2>*
+
+:macro w *2>[2>%
+
+:macro x *2>]2>%
